@@ -1,27 +1,28 @@
 from PIL import Image, ImageDraw
-from cryptographer import cryptographer
+from cryptographer import Cryptographer
+from constants import *
 
 
 def string_hash(key):
-    p = 31
+    p = PRIME_HASH
     power = 1
     ans = 0
     for i in range(len(key)):
         ans += ord(key[i]) * power
         power *= p
-        power %= 2 ** 64
-        ans %= 2 ** 64
+        power %= MODULE
+        ans %= MODULE
     return ans
 
 
 def pixel_generator(key_hash):
     cur = key_hash
     while True:
-        cur = (6364136223846793005 * cur + 271828182890459) % (2 ** 64)
+        cur = (MULTIPLIER * cur + INCREMENT) % MODULE
         yield cur
 
 
-class steganography(cryptographer):
+class Steganography(Cryptographer):
     original_string = ""
     way_to_bmp = ""
 
@@ -41,19 +42,19 @@ class steganography(cryptographer):
         used = [[False for y in range(height)] for x in range(width)]
         cur_char = 0
         for pixel in pixel_generator(string_hash(self.key)):
-            x = (pixel % (2 ** 32)) % width
-            y = ((pixel >> 32) % (2 ** 32)) % height
+            x = (pixel % HALF_MODULE) % width
+            y = ((pixel >> LOG_OF_HALF_MODULE) % HALF_MODULE) % height
             if used[x][y]:
                 continue
             used[x][y] = True
             res_ord = ord(self.original_string[cur_char])
             res_ord = res_ord if res_ord < 600 else res_ord - 600
-            first = res_ord >> 6 % 8
-            second = (res_ord >> 3) % 8
+            first = res_ord >> (2 * THIRD_OF_BIT_MASK) % (1 << THIRD_OF_BIT_MASK)
+            second = (res_ord >> THIRD_OF_BIT_MASK) % (1 << THIRD_OF_BIT_MASK)
             third = res_ord % 8
-            red = ((pix[x, y][0] >> 3) << 3) | first
-            green = ((pix[x, y][1] >> 3) << 3) | second
-            blue = ((pix[x, y][2] >> 3) << 3) | third
+            red = ((pix[x, y][0] >> THIRD_OF_BIT_MASK) << THIRD_OF_BIT_MASK) | first
+            green = ((pix[x, y][1] >> THIRD_OF_BIT_MASK) << THIRD_OF_BIT_MASK) | second
+            blue = ((pix[x, y][2] >> THIRD_OF_BIT_MASK) << THIRD_OF_BIT_MASK) | third
             draw.point((x, y), (red, green, blue))
             if self.original_string[cur_char] == '\0':
                 break
@@ -68,15 +69,15 @@ class steganography(cryptographer):
         pix = image.load()
         used = [[False for y in range(height)] for x in range(width)]
         for pixel in pixel_generator(string_hash(self.key)):
-            x = (pixel % (2 ** 32)) % width
-            y = ((pixel >> 32) % (2 ** 32)) % height
+            x = (pixel % HALF_MODULE) % width
+            y = ((pixel >> LOG_OF_HALF_MODULE) % HALF_MODULE) % height
             if used[x][y]:
                 continue
             used[x][y] = True
-            first = pix[x, y][0] % 8
-            second = pix[x, y][1] % 8
-            third = pix[x, y][2] % 8
-            res_ord = (first << 6) | (second << 3) | third
+            first = pix[x, y][0] % (1 << THIRD_OF_BIT_MASK)
+            second = pix[x, y][1] % (1 << THIRD_OF_BIT_MASK)
+            third = pix[x, y][2] % (1 << THIRD_OF_BIT_MASK)
+            res_ord = (first << (2 * THIRD_OF_BIT_MASK)) | (second << THIRD_OF_BIT_MASK) | third
             char = chr(res_ord if res_ord < 400 else res_ord + 600)
             if char == '\0':
                 break

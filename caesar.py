@@ -1,8 +1,9 @@
 from languages import *
-from cryptographer import cryptographer
+from cryptographer import Cryptographer
+from constants import VERY_BIG_NUMBER
 
 
-class caesar(cryptographer):
+class Caesar(Cryptographer):
     def __init__(self, orig_str, key=0, lang='russian'):
         self.original_string = orig_str
         self.key = key
@@ -29,7 +30,7 @@ class caesar(cryptographer):
             if cur_char in alphabet[self.lang]:
                 str_map[cur_char] += 1
                 number += 1
-        min_difference = 100000000
+        min_difference = VERY_BIG_NUMBER
         res_shift = -1
         for delta in range(0, len(frequency[self.lang])):
             diff = 0

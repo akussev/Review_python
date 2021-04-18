@@ -1,9 +1,10 @@
 from languages import *
 import caesar
-from cryptographer import cryptographer
+from cryptographer import Cryptographer
+from constants import VERY_BIG_NUMBER, MAX_KEY_SIZE
 
 
-class vigenere(cryptographer):
+class Vigenere(Cryptographer):
     def __init__(self, original_string, key, lang):
         self.original_string = original_string
         self.key = key
@@ -36,10 +37,10 @@ class vigenere(cryptographer):
         for char in self.original_string:
             if char in alphabet[self.lang]:
                 alpha_string += char
-        possible_coefficient = 10000
+        possible_coefficient = VERY_BIG_NUMBER
         right_coefficient = coefficients[self.lang]
         key_size = -1
-        for possible_key_size in range(1, 100):
+        for possible_key_size in range(1, min(MAX_KEY_SIZE, len(alpha_string))):
             ans = 0
             for module in range(possible_key_size):
                 module_string = alpha_string[module::possible_key_size]
@@ -56,9 +57,9 @@ class vigenere(cryptographer):
                 key_size = possible_key_size
         key = ""
         for char in range(key_size):
-            caesar_breaker = caesar.caesar(alpha_string[char::key_size], lang=self.lang)
+            caesar_breaker = caesar.Caesar(alpha_string[char::key_size], lang=self.lang)
             decryption = caesar_breaker.break_in()
             key += chars[self.lang][(chars[self.lang][alpha_string[char]] - chars[self.lang][decryption[0]]) % len(alphabet[self.lang])]
         print("I think the right key is", key)
-        vigenere_decrypter = vigenere(self.original_string, key, self.lang)
+        vigenere_decrypter = Vigenere(self.original_string, key, self.lang)
         return vigenere_decrypter.decrypt()
